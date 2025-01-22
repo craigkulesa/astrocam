@@ -1,0 +1,472 @@
+; Miscellaneous definitions
+VID0	EQU     $000000	; Video board select = 0
+CLK2	EQU     $002000 ; Select bottom of the first clock driver board
+CLK3	EQU     $003000 ; Select top of the first clock driver board
+CLK4	EQU     $004000 ; Select bottom of the second clock driver board
+SXMIT	EQU	$00F3C0	; Transmit 16 pixels from two video boards
+
+DLY0	EQU	$000000	; no delay
+DLY1	EQU	$8F0000	; = 5 microsec 
+DLY2	EQU	$880000
+DLYS	EQU	$020000 ; Serial command delay time = 120 nanosec
+
+XMIT0	EQU	$00F000	; Transmit only Ch# 0
+XMIT4	EQU	$00F104	; Transmit only Ch# 4
+XMIT8	EQU	$00F208	; Transmit only Ch# 8
+XMITC	EQU	$00F30C	; Transmit only Ch# c
+XMIT0_3	EQU	$00F0C0	; Transmit from Ch  #0 to Ch  #3
+XMIT4_7	EQU	$00F1C4	; Transmit from Ch  #4 to Ch  #7
+XMIT8_B	EQU	$00F2C8	; Transmit from Ch  #8 to Ch #11
+XMITC_F	EQU	$00F3CC	; Transmit from Ch #12 to Ch #15
+XMIT0_F	EQU	$00F3C0	; Transmit from Ch  #0 to Ch #15
+
+; H2RG internal register names and addresses
+GAIN_REGISTER	 	EQU	$2000
+OUTPUT_MODE_REGISTER 	EQU	$3000
+OUTPUT_BUF_REG		EQU	$4000
+NORMAL_MODE_REG		EQU	$5000
+WINDOW_MODE_REG		EQU	$6000
+MISC_REG		EQU	$7000
+VERT_START_REG		EQU	$8000
+VERT_STOP_REG		EQU	$9000
+HORIZ_START_REG		EQU	$A000
+HORIZ_STOP_REG		EQU	$B000
+
+; Define switch state bits for CLK2 = "bottom" of clock board #1 = channels 0 to 11
+HCLK		EQU	1	; Horizontal (fast pixel) Clock		Pin #1
+VCLK		EQU	2	; Vertical Clock, serial command clock	Pin #2
+LSYNCB		EQU	8	; Line Sync				Pin #4
+FSYNCB		EQU	$10	; Frame Sync and serial command data	Pin #5
+
+; Define switch state bits for CLK3 = "top" of clock board #1 = channels 12 to 23
+READEN		EQU	1	; Read enable				Pin #13
+RESETEN		EQU	2	; Reset enable				Pin #14
+MAINRESETB	EQU	$10	; Reset the serial command register	Pin #17
+
+; Define switch state bits for CLK4 = "bottom" of clock board #2 = channels 0 to 11
+CSB_1		EQU	1	; Serial Chip Select Bar 		Pin #1
+CSB_2		EQU	2	; Serial Chip Select Bar 		Pin #2
+CSB_3		EQU	4	; Serial Chip Select Bar 		Pin #3
+CSB_4		EQU	8	; Serial Chip Select Bar 		Pin #4
+CSB		EQU	CSB_1+CSB_2+CSB_3+CSB_4 	; All four are clocked together
+
+; Voltage tables
+VIDEOmax	EQU	3.3	; Maximum clock voltage, should be 3.3 volts for H1RG.
+CLKmax		EQU     3.3	; Maximum video board DC bias voltage, should be 3.3 volts.
+VSOURCE		EQU	1.0    	; Source load voltage on the ARC46 video board
+CLK_HI		EQU 	3.10	; High clock voltage
+CLK_LO		EQU	0.10	; Low clock voltage
+CLK_ZERO 	EQU	0.0	; Zero volts for power-on sequence
+ADREF		EQU	2.5	; Default gain
+
+; DC bias voltages going to the arrays
+VDDA		EQU	3.28	; Analog positive power supply
+VRESET		EQU	0.15	; Detector reset voltage
+DSUB		EQU	0.40	; Detector substrate voltage 
+VDD		EQU	3.28	; Digital positive power supply
+CELLDRAIN	EQU	0.2	; Pixel source-follower drain node
+DRAIN		EQU	0.0	; Output source-follower drain node
+VBIASPOWER	EQU	3.28	; Pixel source-follower source node
+VBIASGATE	EQU	2.2	; Pixel source-follower bias voltage
+CONTROL_1	EQU	1.0
+CONTROL_2	EQU	1.5
+CONTROL_3	EQU	2.0
+CONTROL_4	EQU	2.5
+
+; Video processor offset values
+;OFFSET		EQU	$858		; Good value for a grounded input
+OFFSET		EQU	$960		; Good value for Hawaii-2 
+OFFSET0		EQU	OFFSET		;   1.0V (dark) to 0.4V (full well)
+OFFSET1		EQU	OFFSET
+OFFSET2		EQU	OFFSET
+OFFSET3		EQU	OFFSET
+OFFSET4		EQU	OFFSET
+OFFSET5		EQU	OFFSET
+OFFSET6		EQU	OFFSET
+OFFSET7		EQU	OFFSET
+OFFSET8		EQU	OFFSET
+OFFSET9		EQU	OFFSET
+OFFSET10	EQU	OFFSET
+OFFSET11	EQU	OFFSET
+OFFSET12	EQU	OFFSET
+OFFSET13	EQU	OFFSET
+OFFSET14	EQU	OFFSET
+OFFSET15	EQU	OFFSET
+
+; Copy of the clocking bit definition for easy reference
+;	DC	CLK2+DELAY+FSYNCB+LSYNCB+VCLK+HCLK
+;	DC	CLK3+DELAY+RESETEN+READEN+MAINRESETB
+;	DC	CLK4+DELAY+CSB
+
+FRAME_INIT
+	DC	END_FRAME_INIT-FRAME_INIT-1
+	DC	CLK2+DLY0+FSYNCB+LSYNCB+0000+0000
+	DC	CLK2+DLY1+000000+LSYNCB+VCLK+0000	; clock VCLK low holding 
+	DC	CLK2+DLY1+000000+LSYNCB+0000+0000	;   FSYNCB low
+	DC	CLK2+DLY0+FSYNCB+LSYNCB+0000+0000
+END_FRAME_INIT
+
+CLOCK_ROW
+	DC	END_CLOCK_ROW-CLOCK_ROW-1
+	DC	CLK2+DLY1+FSYNCB+LSYNCB+0000+0000
+	DC	CLK2+DLY1+FSYNCB+LSYNCB+VCLK+0000	; Pulse VCLK high
+	DC	CLK2+DLY1+FSYNCB+LSYNCB+0000+0000
+	DC	CLK2+DLY0+FSYNCB+LSYNCB+0000+0000
+END_CLOCK_ROW
+
+XFER		EQU	8	; Bit #3 = A/D data -> FIFO 	(high going edge)
+X___		EQU	0
+START_AD	EQU	0	; Bit #2 = A/D Convert 		(low going edge to start conversion)
+S_______	EQU	4
+RESET_INTG	EQU	0	; Bit #1 = Reset Integrator  	(=0 to reset)
+R_________	EQU	2
+ENABLE_INTG	EQU	0	; Bit #0 = Integrate 		(=0 to integrate)
+E__________	EQU	1
+
+HCLK_H		EQU	CLK2+$040000+FSYNCB+LSYNCB+0000+HCLK
+HCLK_L		EQU	CLK2+$040000+FSYNCB+LSYNCB+0000+0000
+
+; Clock the multiplexer, integrate the video signal, A/D convert and transmit
+CLK_COL
+	DC	END_CLK_COL-CLK_COL-1
+	DC	HCLK_L							; HCLK low
+	DC	VID0+$1C0000+X___+S_______+RESET_INTG+E__________	; Reset integrator
+	DC	VID0+$080000+X___+S_______+R_________+E__________	; Settling time
+	DC	VID0+$520000+X___+S_______+R_________+ENABLE_INTG	; Integrate
+ 	DC	HCLK_H							; HCLK High
+	DC	VID0+$2E0000+X___+S_______+R_________+ENABLE_INTG	; Integrate
+	DC	VID0+$100000+X___+S_______+R_________+E__________	; Settling time
+	DC	VID0+$040000+X___+START_AD+R_________+E__________	; Start A/D conversion
+	DC	VID0+$260000+X___+S_______+R_________+E__________	; A/D conversion time
+	DC	VID0+$000000+XFER+S_______+R_________+E__________	; A/D data--> FIFO
+XMT_PXL	DC	SXMIT							; Transmit 16 pixels
+	DC	0,0,0,0,0,0,0						; for SXMITs
+END_CLK_COL
+
+; Video processor bit definitions
+;	Bit #3 = Move A/D data to FIFO 	(high going edge)
+;	Bit #2 = A/D Convert 		(low going edge to start conversion)
+;	Bit #1 = Reset Integrator  	(=0 to reset)
+;	Bit #0 = Integrate 		(=0 to integrate)
+
+;CLK_COL
+;	DC	END_CLK_COL-CLK_COL-1
+;	DC	CLK2+$040000+FSYNCB+LSYNCB+0000+0000	; HCLK low
+;	DC	VID0+$200000+%0101			; Reset integrator
+;	DC	VID0+$080000+%0111			; Settling time
+;	DC	VID0+$200000+%0110			; Integrate
+;	DC	VID0+$040000+%0111			; Settling time
+;	DC	CLK2+$040000+FSYNCB+LSYNCB+0000+HCLK	; HCLK High
+;	DC	VID0+$020000+%0011			; Start A/D conversion
+;	DC	VID0+$260000+%0111			; A/D conversion time
+;	DC	VID0+$000000+%1111			; A/D data--> FIFO
+;	DC	SXMIT					; Transmit 16 pixels
+;END_CLK_COL
+
+; Enable or disable the H2RG array for reading
+ENABLE_READ
+	DC	END_ENABLE_READ-ENABLE_READ-1
+	DC	CLK3+DLY0+0000000+READEN+MAINRESETB
+	DC	CLK3+DLY0+0000000+READEN+MAINRESETB
+	DC	CLK3+DLY0+0000000+READEN+MAINRESETB
+END_ENABLE_READ
+
+; Enable the H2RG array for pixel-by-pixel resetting
+ENABLE_RESET
+	DC	END_ENABLE_RESET-ENABLE_RESET-1
+	DC	CLK3+DLY0+RESETEN+000000+MAINRESETB
+	DC	CLK3+DLY0+RESETEN+000000+MAINRESETB
+	DC	CLK3+DLY0+RESETEN+000000+MAINRESETB	
+END_ENABLE_RESET
+
+; Assert LSYNCB and advance the pixel clock without A/D conversions 
+;   at the beginning of each line. LSYNB is low for 2 x HCLKs.
+FIRST_HCLKS
+	DC	END_FIRST_HCLKS-FIRST_HCLKS-1
+	DC	CLK2+DLY1+FSYNCB+LSYNCB+0000+0000
+	DC	CLK2+DLY2+FSYNCB+LSYNCB+0000+HCLK
+	DC	CLK2+DLY2+FSYNCB+000000+0000+HCLK
+	DC	CLK2+DLY1+FSYNCB+000000+0000+0000
+	DC	CLK2+DLY1+FSYNCB+000000+0000+HCLK
+	DC	CLK2+DLY2+FSYNCB+000000+0000+0000
+	DC	CLK2+DLY0+FSYNCB+LSYNCB+0000+0000
+END_FIRST_HCLKS
+
+; Bring HCLK low at the end of each line
+LAST_HCLKS
+	DC	END_LAST_HCLKS-LAST_HCLKS-1
+	DC	CLK2+DLY0+FSYNCB+LSYNCB+0000+0000
+	DC	CLK2+DLY0+FSYNCB+LSYNCB+0000+0000
+END_LAST_HCLKS
+
+; One microsec delay
+ONE_MICROSEC_DELAY
+	DC	END_ONE_MICROSEC_DELAY-ONE_MICROSEC_DELAY-1
+	DC	CLK2+$0B0000+FSYNCB+LSYNCB+0000+0000
+	DC	CLK2+$0B0000+FSYNCB+LSYNCB+0000+0000
+	DC	CLK2+$000000+FSYNCB+LSYNCB+0000+0000
+END_ONE_MICROSEC_DELAY	
+
+; The remaining commands are for the serial interface
+ONE_CSB_LOW
+	DC	END_ONE_CSB_LOW-ONE_CSB_LOW-1
+	DC	CLK4+DLYS+CSB				
+	DC	CLK4+DLYS+00000+CSB_2+CSB_3+CSB_4 ; CSB_1 only low = serial 
+	DC	CLK4+DLYS+00000+CSB_2+CSB_3+CSB_4
+END_ONE_CSB_LOW
+
+; The remaining commands are for the serial interface
+ALL_CSB_LOW
+	DC	END_ALL_CSB_LOW-ALL_CSB_LOW-1
+	DC	CLK4+DLYS+CSB		; hold all CSB high for a little while
+	DC	CLK4+DLYS+000		; All CSB low = serial 
+	DC	CLK4+DLYS+000
+END_ALL_CSB_LOW
+
+CSB_HIGH
+	DC	END_CSB_HIGH-CSB_HIGH-1
+	DC	CLK4+DLYS+CSB		; then set CSB high
+	DC	CLK4+DLYS+CSB
+	DC	CLK4+DLYS+CSB
+END_CSB_HIGH
+
+CLOCK_SERIAL_ONE
+	DC	END_CLOCK_SERIAL_ONE-CLOCK_SERIAL_ONE-1
+	DC	CLK2+DLYS+FSYNCB+LSYNCB+0000+0000
+	DC	CLK2+DLYS+FSYNCB+LSYNCB+VCLK+0000
+	DC	CLK2+DLYS+FSYNCB+LSYNCB+0000+0000
+END_CLOCK_SERIAL_ONE
+
+CLOCK_SERIAL_ZERO
+	DC	END_CLOCK_SERIAL_ZERO-CLOCK_SERIAL_ZERO-1
+	DC	CLK2+DLYS+000000+LSYNCB+0000+0000
+	DC	CLK2+DLYS+000000+LSYNCB+VCLK+0000
+	DC	CLK2+DLYS+000000+LSYNCB+0000+0000
+END_CLOCK_SERIAL_ZERO
+
+; Reset all the internal registers to default values
+RST_INTERNAL_REGISTERS
+	DC	END_RST_INTERNAL_REGISTERS-RST_INTERNAL_REGISTERS-1
+	DC	CLK3+DLYS+RESETEN+000000+0000000000	; MAINRESETB low for >200 nanosec
+	DC	CLK3+DLYS+RESETEN+000000+0000000000
+	DC	CLK4+DLYS+CSB
+	DC	CLK3+DLY1+RESETEN+000000+MAINRESETB
+	DC	CLK3+DLY1+RESETEN+000000+MAINRESETB
+END_RST_INTERNAL_REGISTERS
+
+;  Zero out ALL the DC biases and clocks, assuming unipolar ARC32 clock driver board
+ZERO_BIASES
+	DC	END_ZERO_BIASES-ZERO_BIASES-1
+	DC	$2A0080					; DAC = unbuffered mode
+	DC	$200100		; Pin #1
+	DC	$200200
+	DC	$200400		; Pin #2
+	DC	$200800
+	DC	$202000		; Pin #3
+	DC	$204000
+	DC	$208000		; Pin #4
+	DC	$210000
+	DC	$220100		; Pin #5
+	DC	$220200
+	DC	$220400		; Pin #6
+	DC	$220800
+	DC	$222000		; Pin #7
+	DC	$224000	
+	DC	$228000		; Pin #8
+	DC	$230000
+	DC	$240100		; Pin #9
+	DC	$240200
+	DC	$240400		; Pin #10
+	DC	$240800
+	DC	$242000		; Pin #11
+	DC	$244000
+	DC	$248000		; Pin #12
+	DC	$250000
+	DC	$260100		; Pin #13
+	DC	$260200
+	DC	$260400		; Pin #14
+	DC	$260800
+	DC	$262000		; Pin #15
+	DC	$264000
+	DC	$268000		; Pin #16
+	DC	$270000
+	DC	$280100		; Pin #17
+	DC	$280200
+	DC	$280400		; Pin #18
+	DC	$280800
+	DC	$282000		; Pin #19
+	DC	$284000
+	DC	$288000		; Pin #33
+	DC	$290000
+	DC	$2A0100		; Pin #34
+	DC	$2A0200
+	DC	$2A0400		; Pin #35
+	DC	$2A0800
+	DC	$2A2000		; Pin #36
+	DC	$2A4000
+	DC	$2A8000		; Pin #37
+	DC	$2B0000
+
+; Second clock driver board
+	DC	$4A0080					; DAC = unbuffered mode
+	DC	$400100		; Pin #1
+	DC	$400200
+	DC	$400400		; Pin #2
+	DC	$400800
+	DC	$402000		; Pin #3
+	DC	$404000
+	DC	$408000		; Pin #4
+	DC	$410000
+	DC	$420100		; Pin #5
+	DC	$420200
+	DC	$420400		; Pin #6
+	DC	$420800
+	DC	$422000		; Pin #7
+	DC	$424000	
+	DC	$428000		; Pin #8
+	DC	$430000
+	DC	$440100		; Pin #9
+	DC	$440200
+	DC	$440400		; Pin #10
+	DC	$440800
+	DC	$442000		; Pin #11
+	DC	$444000
+	DC	$448000		; Pin #12
+	DC	$450000
+	DC	$460100		; Pin #13
+	DC	$460200
+	DC	$460400		; Pin #14
+	DC	$460800
+	DC	$462000		; Pin #15
+	DC	$464000
+	DC	$468000		; Pin #16
+	DC	$470000
+	DC	$480100		; Pin #17
+	DC	$480200
+	DC	$480400		; Pin #18
+	DC	$480800
+	DC	$482000		; Pin #19
+	DC	$484000
+	DC	$288000		; Pin #33
+	DC	$490000
+	DC	$4A0100		; Pin #34
+	DC	$4A0200
+	DC	$4A0400		; Pin #35
+	DC	$4A0800
+	DC	$4A2000		; Pin #36
+	DC	$4A4000
+	DC	$4A8000		; Pin #37
+	DC	$4B0000
+
+; Both video processors
+	DC	$0c4800		; P4, Pin #1
+	DC	$0c8800		; P4, Pin #2
+	DC	$1c4800		; P7, Pin #1
+	DC	$1c8800		; P7, Pin #2
+	DC	$0cc800		; P4, Pin #3
+	DC	$0d0000		; P4, Pin #4
+	DC	$0d4000		; P4, Pin #5
+	DC	$0d8000		; P4, Pin #6
+	DC	$1cc800		; P7, Pin #3
+	DC	$1d0000		; P7, Pin #4
+	DC	$1d4000		; P7, Pin #5
+	DC	$1d8000		; P7, Pin #6
+	DC	$0dc000		; P4, Pin #7
+	DC	$1dc000		; P7, Pin #7
+END_ZERO_BIASES
+
+; Clock board #1 voltage settings
+DACS	DC	$2A0080				; DAC = unbuffered mode
+	DC	$200100+@CVI(CLK_HI/CLKmax*255)	; Pin #1, HCLK   
+	DC	$200200+@CVI(CLK_LO/CLKmax*255)
+	DC	$200400+@CVI(CLK_HI/CLKmax*255)	; Pin #2, VCLK   
+	DC	$200800+@CVI(CLK_LO/CLKmax*255)
+	DC	$208000+@CVI(CLK_HI/CLKmax*255)	; Pin #4, LSYNCB
+	DC	$210000+@CVI(CLK_LO/CLKmax*255)
+	DC	$220100+@CVI(CLK_HI/CLKmax*255)	; Pin #5, FSYNCB  
+	DC	$220200+@CVI(CLK_LO/CLKmax*255)
+
+	DC	$260100+@CVI(CLK_HI/CLKmax*255)	; Pin #13, READEN
+	DC	$260200+@CVI(CLK_LO/CLKmax*255)	
+	DC	$260400+@CVI(CLK_HI/CLKmax*255)	; Pin #14, RESETEN
+	DC	$260800+@CVI(CLK_LO/CLKmax*255)
+	DC	$280100+@CVI(CLK_HI/CLKmax*255)	; Pin #17, MAINRESETB
+	DC	$280200+@CVI(CLK_LO/CLKmax*255)
+	
+; Clock board #2 voltage settings
+	DC	$4A0080				; DAC = unbuffered mode
+	DC	$400100+@CVI(CLK_HI/CLKmax*255)	; Pin #1, CSB-1   
+	DC	$400200+@CVI(CLK_LO/CLKmax*255)
+	DC	$400400+@CVI(CLK_HI/CLKmax*255)	; Pin #2, CSB-2   
+	DC	$400800+@CVI(CLK_LO/CLKmax*255)
+	DC	$402000+@CVI(CLK_HI/CLKmax*255)	; Pin #3, CSB-3
+	DC	$404000+@CVI(CLK_LO/CLKmax*255)
+	DC	$408000+@CVI(CLK_HI/CLKmax*255)	; Pin #4, CSB-4
+	DC	$410000+@CVI(CLK_LO/CLKmax*255)
+VDDA_ON	DC	$440200+@CVI(VDDA/CLKmax*255)	; Pin #9, VDDA-1
+	DC	$440800+@CVI(VDDA/CLKmax*255)	; Pin #10, VDDA-2
+	DC	$444000+@CVI(VDDA/CLKmax*255)	; Pin #11, VDDA-3
+	DC	$450000+@CVI(VDDA/CLKmax*255)	; Pin #12, VDDA-4
+	
+	DC	$460200+@CVI(VRESET/CLKmax*255)	; Pin #13, VRESET-1
+	DC	$460800+@CVI(DSUB/CLKmax*255)	; Pin #14, DSUB-1
+	DC	$464000+@CVI(VRESET/CLKmax*255)	; Pin #15, VRESET-2
+	DC	$470000+@CVI(DSUB/CLKmax*255)	; Pin #16, DSUB-2
+	DC	$480200+@CVI(VRESET/CLKmax*255)	; Pin #17, VRESET-3
+	DC	$480800+@CVI(DSUB/CLKmax*255)	; Pin #18, DSUB-3
+	DC	$484000+@CVI(VRESET/CLKmax*255)	; Pin #19, VRESET-4
+	DC	$490000+@CVI(DSUB/CLKmax*255)	; Pin #33, DSUB-4
+	DC	$4A0200+@CVI(CELLDRAIN/CLKmax*255) ; Pin #34, CELLDRAIN
+VDD_ON	DC	$4A4000+@CVI(VDD/CLKmax*255)	; Pin #36, VDD
+	DC	$4B0000+@CVI(DRAIN/CLKmax*255)	; Pin #37, DRAIN
+
+; A/D gain (reference voltage)
+	DC	$0c0000+@CVI((ADREF+VIDEOmax)/(2.0*VIDEOmax)*4095)
+	DC	$1c0000+@CVI((ADREF+VIDEOmax)/(2.0*VIDEOmax)*4095)
+
+; Bipolar +/-5 volts output voltages, on the 15 pin DB output connector
+	DC	$0c4000+@CVI((CONTROL_1+VIDEOmax)/(2.0*VIDEOmax)*4095)	; P4, Pin #1
+	DC	$0c8000+@CVI((CONTROL_2+VIDEOmax)/(2.0*VIDEOmax)*4095)	; P4, Pin #2
+	DC	$1c4000+@CVI((CONTROL_3+VIDEOmax)/(2.0*VIDEOmax)*4095)	; P7, Pin #1
+	DC	$1c8000+@CVI((CONTROL_4+VIDEOmax)/(2.0*VIDEOmax)*4095)	; P7, Pin #2
+
+	DC	$0cc000+@CVI((VBIASGATE+VIDEOmax)/(2.0*VIDEOmax)*4095)	; P4, Pin #3
+	DC	$0d0000+@CVI(VBIASGATE/VIDEOmax*4095)			; P4, Pin #4
+	DC	$0d4000+@CVI(VBIASPOWER/VIDEOmax*4095)			; P4, Pin #5
+	DC	$0d8000+@CVI(VBIASPOWER/VIDEOmax*4095)			; P4, Pin #6
+	DC	$1cc000+@CVI((VBIASGATE+VIDEOmax)/(2.0*VIDEOmax)*4095)	; P7, Pin #3
+	DC	$1d0000+@CVI(VBIASGATE/VIDEOmax*4095)			; P7, Pin #4
+	DC	$1d4000+@CVI(VBIASPOWER/VIDEOmax*4095)			; P7, Pin #5
+	DC	$1d8000+@CVI(VBIASPOWER/VIDEOmax*4095)			; P7, Pin #6
+	
+; We assume that the 8-channel IR video board ARC46 is being used, that it 
+;  provides the source voltage for H1RG, that JP11 has a jumper installed
+;  from pins #1 to 2, and that the source load resistors R10 and R21 are 
+;  installed in all eight channels. 
+
+	DC	$0dc000+@CVI(VSOURCE/VIDEOmax*4095)		; P4, Pin #7
+	DC	$1dc000+@CVI(VSOURCE/VIDEOmax*4095)		; P7, Pin #7
+
+; Video processor offset voltages
+	DC	$0e0000+OFFSET0		; Output #0 - Board #0
+	DC	$0e4000+OFFSET1		; Output #1
+	DC	$0e8000+OFFSET2		; Output #2
+	DC	$0ec000+OFFSET3		; Output #3
+	DC	$0f0000+OFFSET4		; Output #4
+	DC	$0f4000+OFFSET5		; Output #5
+	DC	$0f8000+OFFSET6		; Output #6
+	DC	$0fc000+OFFSET7		; Output #7
+
+	DC	$1e0000+OFFSET8		; Output #0 - Board #1
+	DC	$1e4000+OFFSET9		; Output #1
+	DC	$1e8000+OFFSET10	; Output #2
+	DC	$1ec000+OFFSET11	; Output #3
+	DC	$1f0000+OFFSET12	; Output #4
+	DC	$1f4000+OFFSET13	; Output #5
+	DC	$1f8000+OFFSET14	; Output #6
+	DC	$1fc000+OFFSET15	; Output #7
+
+END_DACS
+
+
+

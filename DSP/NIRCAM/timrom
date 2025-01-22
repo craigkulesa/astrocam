@@ -1,0 +1,21 @@
+#!/bin/sh
+#
+	echo ""
+	echo "Assembling DSP code to generate a generic EEPROM"
+	echo ""
+
+DOWNLOAD=ROM
+
+asm56300 -b -ltimrom.ls -d DOWNLOAD $DOWNLOAD timrom.asm
+dsplnk -btimrom.cld -v timrom.cln 
+rm -f timrom.lod
+cldlod timrom.cld > timrom.lod
+rm timrom.cln ; rm timrom.cld
+
+	echo ""
+	echo "Created files 'tim.s' for EEPROM generation"
+	echo ""
+
+srec -bs timrom.lod
+mv timrom.s tim.s
+mv timrom.lod tim.rom

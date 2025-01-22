@@ -1,0 +1,73 @@
+This H2RG code contains
+
+	3 microsec per pixel readout rate
+	Initialization of the H2RG array by writing to its serial command register:
+		64-output mode
+		Default slow buffered readout mode
+		Enhanced clocking in normal and windowed readout modes
+	Pinouts as shown in the 'H2RG.waveforms' file
+	Continuous readout mode, selectable in Owl
+	Implementation of subarray readout, either in single channel native 
+		H2RG windowing mode, or in multi-channel slow buffered readout mode
+
+The following custom commands are implemented. They can be entered in the 'CMD' window of
+the 'Debug...' window of Owl.
+
+'SER'  arg	Transmit the hex number 'arg' to the H2RG internal registers
+			via the SERial port
+	
+'RIR'		Reset the Internal H2RG Registers
+
+'INI'		INitialize the Internal H2RG registers
+
+'SRM'  arg	Set the H2RG Reset Mode in continuous readout mode
+       arg = 1	To reset the H2RG before each exposure 
+       arg = 0	To not reset it each time
+     
+'SRD'  arg	Set Read Delay between clocking a row and beginning to read it
+       arg = 1	To enable the delay in microsec
+       arg = 0	To disable the delay
+
+'SVO'  arg1 arg2 arg3	Set the Video Offsets on the ARC-46 video processor board
+       arg1 = board number, 0 to 7
+       arg2 = DAC number, 0 to 3
+       arg3 = 12-bit offset number, 0 to 4095
+
+'CDS'  arg	Set to implement Correlated Double Sampling. In the Setup window of Owl the
+			image size should be set to twice the size of a single read. 
+       arg = 1	To enable CDS
+       arg = 0	To disable CDS
+
+'SNC'  arg	Select the Number of readout Channels in slow buffered mode. This can
+			be 1, 4, 16, 32 or 64. For test purposes with one video board 
+			it can be 8. If # = 3264 it reads 32 channels from the video
+			channel numbers 32 to 63.
+
+'RNC'		Read the Number of video Channels that the controller will read
+
+'SVC'  arg	Select the Video Channel to be read in one channel readout mode
+
+'SWM'  arg	Set Windowing Mode
+       arg = 1	Read out in native H2RG windowing mode through one output #15
+       arg = 0	Read out in slow buffered readout mode through the number of channels
+			selected by the 'SNC' command.
+ 
+
+The following commands are supported in Owl and the supplied API:
+
+'SSS' arg1 arg2 arg3 = Set Subarray Size and enable or disable subarray readout mode.
+			The command "SSS 0 0 0" restores whole image readout mode.
+	arg1 = not used 
+	arg2 = Number of columns in subarray
+	arg3 = Number of rows in subarray
+
+'SSP' arg1 arg2 arg3 = Set Subarray Positions
+	arg1 = starting row number to begin reading
+	arg2 = starting column number to begin reading
+	arg3 = not used
+
+Subarray or whole image readout is selected with the 'SSS' command, which is implemented in Owl.
+Subarray readout can be either native H2RG windowing mode through one video channel, or readout 
+from a subarray in each of the channels selected by the 'SNC' command. The command 'SWM' selects 
+between them and the commands SSS and SSP select the subarray size and position.
+

@@ -1,0 +1,617 @@
+import javax.swing.BorderFactory;
+import owl.cameraAPI.CameraAPI;
+import owl.cameraAPI.ReplyException;
+import owl.CCParams.CCScriptFrame;
+import owl.main.owltypes.OwlBoldButton;
+import owl.main.owltypes.OwlNumberField;
+import owl.gui.utils.OwlUtilities;
+import owl.main.owltypes.OwlPanel;
+import owl.main.MainApp;
+
+
+// +---------------------------------------------------------------------------------------+
+// |  H2RGCtrlFrame Class                                                                  |
+// +---------------------------------------------------------------------------------------+
+// |  This is the primary window                                                           |
+// +---------------------------------------------------------------------------------------+
+public class H2RGCtrlFrame extends CCScriptFrame implements ActionListener, Runnable
+{
+	private final int BRD_ID_INDEX	= 0;
+	private final int BRD_ALL_INDEX	= 1;
+	private final int DAC_INDEX		= 0;
+
+	public final int VRM	= 0x56524D;	// arg = 1 for 1x1 mode, 0 for 8 at a time mode
+	public final int SER	= 0x534552;	// arg = hex number to transmit via serial port
+	public final int RIR	= 0x524952;
+	public final int INI	= 0x494E49;
+	public final int SSM	= 0x53534D;
+	public final int SRM	= 0x53524D;	// arg = 1 To reset, arg = 0 To not reset
+	public final int SRD	= 0x535244;	// arg = 1 To enable delay, arg = 0	To disable delay
+	public final int SVO	= 0x53564F;	// arg1 = brd number, 0 to 7, arg2 = DAC number, 0 to 3,
+										// arg3 = 12-bit offset number, 0 to 4095
+
+	public final int CDS	= 0x434453;	// arg = 1 To enable CDS, arg = 0 To disable CDS
+	public final int SNC	= 0x534E43;	// arg = 1, 4, 16, 32 or 64. Number of readout Channels.
+	public final int RNC	= 0x524E43;
+	public final int SVC	= 0x535643;	// arg = Select the Video Channel
+	public final int SWM	= 0x53574D;	// arg = 1 Read out native windowing mode via output #15
+										// arg = 0 Read out in slow buffered mode via the number of channels
+
+	JToolBar		m_toolbar;
+	JRadioButton	m_jSRMYesRadio;
+	JRadioButton	m_jSRMNoRadio;
+	JRadioButton	m_jCDSOnRadio;
+	JRadioButton	m_jCDSOffRadio;
+	JRadioButton	m_jSWMOnRadio;
+	JRadioButton	m_jSWMOffRadio;
+	JRadioButton	m_jVRM1Radio;
+	JRadioButton	m_jVRM8Radio;
+	JRadioButton	m_jSSMOnRadio;
+	JRadioButton	m_jSSMOffRadio;
+	JComboBox		m_jSVOBrdCombo;
+	JComboBox		m_jSVODacCombo;
+	JComboBox		m_jSNCCombo;
+	JComboBox		m_jSWMCombo;
+	OwlNumberField	m_jSVOOffsetTxtfld;
+	OwlNumberField	m_jSRDTxtfld;
+	OwlNumberField	m_jSERTxtfld;
+	OwlNumberField	m_jRNCTxtfld;
+	OwlNumberField	m_jSVCTxtfld;
+	int				m_dCommand;
+
+
+	public H2RGCtrlFrame()
+	{
+		super( "H2RG Ctrl" );
+
+		m_toolbar = new JToolBar();
+		m_toolbar.setFloatable( false );
+
+		appendToolbar( m_toolbar );
+
+		getContentPane().add( m_toolbar, BorderLayout.PAGE_START );
+		getContentPane().add( createComponents(), BorderLayout.CENTER );
+
+		pack();
+		OwlUtilities.centerFrame( this );
+
+		loadPreferences();
+	}
+
+	public void destroy()
+	{
+		dispose();
+	}
+
+	public void actionPerformed( ActionEvent ae )
+	{
+		if ( ae.getActionCommand().equals( Integer.toHexString( INI ) ) ||
+			 ae.getActionCommand().equals( Integer.toHexString( RIR ) ) ||
+			 ae.getActionCommand().equals( Integer.toHexString( SER ) ) ||
+			 ae.getActionCommand().equals( Integer.toHexString( SRM ) ) ||
+			 ae.getActionCommand().equals( Integer.toHexString( SRD ) ) ||
+			 ae.getActionCommand().equals( Integer.toHexString( SVO ) ) ||
+			 ae.getActionCommand().equals( Integer.toHexString( CDS ) ) ||
+			 ae.getActionCommand().equals( Integer.toHexString( SNC ) ) ||
+			 ae.getActionCommand().equals( Integer.toHexString( RNC ) ) ||
+			 ae.getActionCommand().equals( Integer.toHexString( SVC ) ) ||
+			 ae.getActionCommand().equals( Integer.toHexString( SWM ) ) ||
+			 ae.getActionCommand().equals( Integer.toHexString( VRM ) ) ||
+			 ae.getActionCommand().equals( Integer.toHexString( SSM ) ) )
+		{
+			m_dCommand = Integer.parseInt( ae.getActionCommand(), 16 );
+
+			( new Thread( this ) ).start();
+		}
+
+		else
+		{
+			super.actionPerformed( ae );
+		}
+	}
+
+	public void run()
+	{
+		try
+		{
+			switch ( m_dCommand )
+			{
+				//  'INI' Command
+				// +--------------------------------------------------+
+				case INI:
+				{
+					MainApp.infoStart( "Sending H2RG initialization command" );
+					CameraAPI.Cmd( CameraAPI.TIM_ID, INI, CameraAPI.DON );
+					MainApp.infoEnd();
+				}
+				break;
+
+				//  'RIR' Command
+				// +--------------------------------------------------+
+				case RIR:
+				{
+					MainApp.infoStart( "Sending H2RG reset command" );
+					CameraAPI.Cmd( CameraAPI.TIM_ID, RIR, CameraAPI.DON );
+					MainApp.infoEnd();
+				}
+				break;
+
+				//  'SER' Command
+				// +--------------------------------------------------+
+				case SER:
+				{
+					int dValue = m_jSERTxtfld.getInt( 16 );
+
+					MainApp.infoStart( "Transmitting H2RG serial value 0x" + Integer.toHexString( dValue ) );
+					CameraAPI.Cmd( CameraAPI.TIM_ID, SER, dValue, CameraAPI.DON );
+					MainApp.infoEnd();
+				}
+				break;
+
+				//  'SRM' Command
+				// +--------------------------------------------------+
+				case SRM:
+				{
+					if ( !m_jSRMYesRadio.isSelected() && !m_jSRMNoRadio.isSelected() )
+					{
+						throw new Exception( "Please select a H2RG reset mode option!" );
+					}
+
+					int dArg = ( m_jSRMYesRadio.isSelected() ? 1 : 0 );
+
+					MainApp.infoStart( "Setting H2RG reset mode" );
+					CameraAPI.Cmd( CameraAPI.TIM_ID, SRM, dArg, CameraAPI.DON );
+					MainApp.infoEnd();
+				}
+				break;
+
+				//  'SRD' Command
+				// +--------------------------------------------------+
+				case SRD:
+				{
+					int dArg = m_jSRDTxtfld.getInt();
+
+					MainApp.infoStart( "Setting H2RG read delay" );
+					CameraAPI.Cmd( CameraAPI.TIM_ID, SRD, dArg, CameraAPI.DON );
+					MainApp.infoEnd();
+				}
+				break;
+
+				//  'SVO' Command
+				// +--------------------------------------------------+
+				case SVO:
+				{
+					if ( m_jSVOBrdCombo.getSelectedIndex() == 0 )
+					{
+						throw new Exception( "Please select a H2RG board id!" );
+					}
+
+					if ( m_jSVODacCombo.getSelectedIndex() == 0 && m_jSVOBrdCombo.getSelectedIndex() > 1 )
+					{
+						throw new Exception( "Please select a H2RG DAC!" );
+					}
+
+					int dOff = m_jSVOOffsetTxtfld.getInt();
+
+					if ( m_jSVOBrdCombo.getSelectedIndex() > 1 )
+					{
+						int dBrd = Integer.parseInt( m_jSVOBrdCombo.getSelectedItem() );
+						int dDac = Integer.parseInt( m_jSVODacCombo.getSelectedItem() );
+
+						MainApp.infoStart( "Setting H2RG video offset" );
+						CameraAPI.Cmd( CameraAPI.TIM_ID, SVO, dBrd, dDac, dOff, CameraAPI.DON );
+						MainApp.infoEnd();
+					}
+					else
+					{
+						MainApp.infoStart( "Setting ALL H2RG video offsets" );
+						for ( int brd=0; brd<8; brd++ )
+						{
+							for ( int dac=0; dac<8; dac++ )
+							{
+								CameraAPI.Cmd( CameraAPI.TIM_ID,
+											   SVO,
+											   brd,
+											   dac,
+											   dOff,
+											   CameraAPI.DON );
+							}
+						}
+						MainApp.infoEnd();
+					}
+				}
+				break;
+
+				//  'CDS' Command
+				// +--------------------------------------------------+
+				case CDS:
+				{
+					if ( !m_jCDSOnRadio.isSelected() && !m_jCDSOffRadio.isSelected() )
+					{
+						throw new Exception( "Please select a H2RG correlated double sampling option!" );
+					}
+
+					int dArg = ( m_jCDSOnRadio.isSelected() ? 1 : 0 );
+
+					MainApp.infoStart( "Setting H2RG correlated double sampling" );
+					CameraAPI.Cmd( CameraAPI.TIM_ID, CDS, dArg, CameraAPI.DON );
+					MainApp.infoEnd();
+				}
+				break;
+
+				//  'SNC' Command
+				// +--------------------------------------------------+
+				case SNC:
+				{
+					int dNumOfChannels = Integer.parseInt( m_jSNCCombo.getSelectedItem() );
+
+					if ( dNumOfChannels == 1 )
+					{
+						CameraAPI.WriteBar( 0x2, 0x5C, 0 );
+						CameraAPI.Cmd( CameraAPI.TIM_ID, VRM, 1, CameraAPI.DON );
+					}
+
+					if ( dNumOfChannels == 4 )
+					{
+						CameraAPI.Cmd( CameraAPI.TIM_ID, VRM, 1, CameraAPI.DON );
+					}
+
+					MainApp.infoStart( "Setting H2RG number of readout channels" );
+					CameraAPI.Cmd( CameraAPI.TIM_ID, SNC, dNumOfChannels, CameraAPI.DON );
+					MainApp.infoEnd();
+				}
+				break;
+
+				//  'RNC' Command
+				// +--------------------------------------------------+
+				case RNC:
+				{
+					MainApp.infoStart( "Raading H2RG number of readout channels" );
+					int dNumOfChannels = CameraAPI.Cmd2( CameraAPI.TIM_ID, RNC );
+					MainApp.infoEnd();
+	
+					m_jRNCTxtfld.setValue( dNumOfChannels );
+				}
+				break;
+
+				//  'SVC' Command
+				// +--------------------------------------------------+
+				case SVC:
+				{
+					int dVideoChannel = m_jSVCTxtfld.getInt();
+
+					MainApp.infoStart( "Setting H2RG video channel" );
+					CameraAPI.Cmd( CameraAPI.TIM_ID, SVC, dVideoChannel, CameraAPI.DON );
+					MainApp.infoEnd();
+				}
+				break;
+
+				//  'SWM' Command
+				// +--------------------------------------------------+
+				case SWM:
+				{
+					if ( !m_jSWMOnRadio.isSelected() && !m_jSWMOffRadio.isSelected() )
+					{
+						throw new Exception( "Please select a H2RG windowing mode!" );
+					}
+
+					int dArg = ( m_jSWMOnRadio.isSelected() ? 1 : 0 );
+
+					MainApp.infoStart( "Setting H2RG windowing mode" );
+					CameraAPI.Cmd( CameraAPI.TIM_ID, SWM, dArg, CameraAPI.DON );
+					MainApp.infoEnd();
+				}
+				break;
+
+				//  'VRM' Command
+				// +--------------------------------------------------+
+				case VRM:
+				{
+					if ( !m_jVRM1Radio.isSelected() && !m_jVRM8Radio.isSelected() )
+					{
+						throw new Exception( "Please select a H2RG video readout mode!" );
+					}
+
+					int dArg = ( m_jVRM1Radio.isSelected() ? 1 : 0 );
+
+					MainApp.infoStart( "Setting H2RG video readout mode" );
+					CameraAPI.Cmd( CameraAPI.TIM_ID, VRM, dArg, CameraAPI.DON );
+					MainApp.infoEnd();
+				}
+				break;
+
+				//  'SSM' Command
+				// +--------------------------------------------------+
+//				case SSM:
+//				{
+//				if ( !m_jSSMOnRadio.isSelected() && !m_jSSMOffRadio.isSelected() )
+//					{
+//						throw new Exception( "Please select a H2RG synchronous readout mode!" );
+//					}
+//
+//					int dArg = ( m_jSSMOnRadio.isSelected() ? 1 : 0 );
+//
+//					MainApp.infoStart( "Setting H2RG synchronous readout mode" );
+//					CameraAPI.Cmd( CameraAPI.TIM_ID, SSM, dArg, CameraAPI.DON );
+//					MainApp.infoEnd();
+//				}
+//				break;
+
+				//  Default
+				// +---------------------------------------------------+
+				default:
+				{
+					throw new Exception( "Invalid H2RG command: " + m_dCommand );
+				}
+				break;
+			}
+		}
+		catch ( ReplyException re )
+		{
+			MainApp.infoFail();
+			MainApp.error( re.toString() );
+		}
+		catch ( Exception e )
+		{
+			MainApp.infoFail();
+			MainApp.error( e.getMessage() );
+		}
+	}
+
+	private JButton createButton( String sText, int dCmd )
+	{
+		JButton jButton = new JButton( sText );
+
+		jButton.setPreferredSize( new Dimension( 80, 25 ) );
+		jButton.setActionCommand( Integer.toHexString( dCmd ) );
+		jButton.addActionListener( this );
+
+		return jButton;
+	}
+
+	private JPanel createComponents()
+	{
+		//  Title Panel
+		// +--------------------------------------------------+
+		JLabel jTitleLabel = new JLabel( "H2RG Command Center" );
+		jTitleLabel.setFont( new Font( Font.SANS_SERIF, Font.BOLD, 14 ) );
+
+		JPanel jTitlePanel = new JPanel( new FlowLayout( FlowLayout.CENTER ) );
+		jTitlePanel.setBackground( new Color( 202, 251, 159 ) );
+		jTitlePanel.setBorder( BorderFactory.createLineBorder( new Color( 66, 137, 3 ), 2 ) );
+		jTitlePanel.setPreferredSize( new Dimension( 250, 30 ) );
+		jTitlePanel.add( jTitleLabel );
+
+		//  'INI' Command Panel
+		// +--------------------------------------------------+
+		JButton jINIButton = createButton( "Init", INI );
+
+		JPanel jINIPanel = new JPanel( new FlowLayout( FlowLayout.LEFT ) );
+		jINIPanel.add( jINIButton );
+		jINIPanel.add( new JLabel( " the Internal H2RG Registers " ) );
+
+		//  'RIR' Command Panel
+		// +--------------------------------------------------+
+		JButton jRIRButton = createButton( "Reset", RIR );
+
+		JPanel jRIRPanel = new JPanel( new FlowLayout( FlowLayout.LEFT ) );
+		jRIRPanel.add( jRIRButton );
+		jRIRPanel.add( new JLabel( " the Internal H2RG Registers " ) );
+
+		//  'SER' Command Panel
+		// +--------------------------------------------------+
+		JButton jSERButton = createButton( "Transmit", SER );
+
+		m_jSERTxtfld = new OwlNumberField( "0", 10 );
+
+		JPanel jSERPanel = new JPanel( new FlowLayout( FlowLayout.LEFT ) );
+		jSERPanel.add( jSERButton );
+		jSERPanel.add( m_jSERTxtfld );
+		jSERPanel.add( new JLabel( "( hex ) to the Internal H2RG Registers Via the Serial Port" ) );
+
+		//  'SRM' Command Panel
+		// +--------------------------------------------------+
+		JButton jSRMButton = createButton( "Do", SRM );
+
+		m_jSRMYesRadio = new JRadioButton( "Reset" );
+		m_jSRMNoRadio  = new JRadioButton( "NOT Reset" );
+
+		ButtonGroup jSRMBtnGrp = new ButtonGroup();
+		jSRMBtnGrp.add( m_jSRMYesRadio );
+		jSRMBtnGrp.add( m_jSRMNoRadio );
+
+		JPanel jSRMPanel = new JPanel( new FlowLayout( FlowLayout.LEFT ) );
+		jSRMPanel.add( jSRMButton );
+		jSRMPanel.add( m_jSRMYesRadio );
+		jSRMPanel.add( m_jSRMNoRadio );
+		jSRMPanel.add( new JLabel( " the H2RG Before Each Exposure" ) );
+
+		//  'SRD' Command Panel
+		// +--------------------------------------------------+
+		JButton jSRDButton = createButton( "Set", SRD );
+
+		m_jSRDTxtfld = new OwlNumberField( "0", 10 );
+
+		JPanel jSRDPanel = new JPanel( new FlowLayout( FlowLayout.LEFT ) );
+		jSRDPanel.add( jSRDButton );
+		jSRDPanel.add( new JLabel( "the read delay ( between clocking a row and beginning to read it ) to: " ) );
+		jSRDPanel.add( m_jSRDTxtfld );
+		jSRDPanel.add( new JLabel( "( " + Character.toString( ( char )0x3BC ) + "sec )" ) );
+
+		//  'SVO' Command Panel
+		// +--------------------------------------------------+
+		JButton jSVOButton = createButton( "Set", SVO );
+
+		String[] SVOBrdOptions = { "Board Id", "ALL", "0", "1", "2", "3", "4", "5", "6", "7" };
+		m_jSVOBrdCombo = new JComboBox( SVOBrdOptions );
+
+		m_jSVOBrdCombo.addItemListener(
+						new ItemListener()
+						{
+							public void itemStateChanged( ItemEvent ie )
+							{
+								if ( ie.getItem().equals( "ALL" ) )
+								{
+									m_jSVODacCombo.setEnabled( false );
+								}
+								else
+								{
+									m_jSVODacCombo.setEnabled( true );
+								}
+							}
+						 } );
+
+		String[] SVODacOptions = { "DAC", "0", "1", "2", "3", "4", "5", "6", "7" };
+		m_jSVODacCombo = new JComboBox( SVODacOptions );
+
+		m_jSVOOffsetTxtfld = new OwlNumberField( "0", 10 );
+
+		JPanel jSVOPanel = new JPanel( new FlowLayout( FlowLayout.LEFT ) );
+		jSVOPanel.add( jSVOButton );
+		jSVOPanel.add( new JLabel( "Video Offset: " ) );
+		jSVOPanel.add( m_jSVOBrdCombo );
+		jSVOPanel.add( m_jSVODacCombo );
+		jSVOPanel.add( new JLabel( " Offset:" ) );
+		jSVOPanel.add( m_jSVOOffsetTxtfld );
+		jSVOPanel.add( new JLabel( "( 0 - 4095 )" ) );
+
+		//  'CDS' Command Panel
+		// +--------------------------------------------------+
+		JButton jCDSButton = createButton( "Set", CDS );
+
+		m_jCDSOnRadio  = new JRadioButton( "Enabled" );
+		m_jCDSOffRadio = new JRadioButton( "Disabled" );
+
+		ButtonGroup jCDSBtnGrp = new ButtonGroup();
+		jCDSBtnGrp.add( m_jCDSOnRadio );
+		jCDSBtnGrp.add( m_jCDSOffRadio );
+
+		JPanel jCDSPanel = new JPanel( new FlowLayout( FlowLayout.LEFT ) );
+		jCDSPanel.add( jCDSButton );
+		jCDSPanel.add( new JLabel( "Correlated Double Sampling To: " ) );
+		jCDSPanel.add( m_jCDSOnRadio );
+		jCDSPanel.add( m_jCDSOffRadio );
+
+		//  'SNC' Command Panel
+		// +--------------------------------------------------+
+		JButton jSNCButton = createButton( "Set", SNC );
+
+		String[] SNCOptions = { "1", "4", "32", "8" };
+		m_jSNCCombo = new JComboBox( SNCOptions );
+
+		JPanel jSNCPanel = new JPanel( new FlowLayout( FlowLayout.LEFT ) );
+		jSNCPanel.add( jSNCButton );
+		jSNCPanel.add( new JLabel( "Number of Readout Channels in Slow Buffered Mode: " ) );
+		jSNCPanel.add( m_jSNCCombo );
+
+		//  'RNC' Command Panel
+		// +--------------------------------------------------+
+		JButton jRNCButton = createButton( "Read", RNC );
+
+		m_jRNCTxtfld = new OwlNumberField( "", 10 );
+		m_jRNCTxtfld.setEditable( false );
+
+		JPanel jRNCPanel = new JPanel( new FlowLayout( FlowLayout.LEFT ) );
+		jRNCPanel.add( jRNCButton );
+		jRNCPanel.add( new JLabel( " the Number of video Channels: " ) );
+		jRNCPanel.add( m_jRNCTxtfld );
+
+		//  'SVC' Command Panel
+		// +--------------------------------------------------+
+		JButton jSVCButton = createButton( "Set", SVC );
+
+		m_jSVCTxtfld = new OwlNumberField( "", 10 );
+
+		JPanel jSVCPanel = new JPanel( new FlowLayout( FlowLayout.LEFT ) );
+		jSVCPanel.add( jSVCButton );
+		jSVCPanel.add( new JLabel( " the Video Channel to be read in one channel readout mode: " ) );
+		jSVCPanel.add( m_jSVCTxtfld );
+
+		//  'SWM' Command Panel
+		// +--------------------------------------------------+
+		JButton jSWMButton = createButton( "Set", SWM );
+
+		m_jSWMOnRadio  = new JRadioButton( "Enabled" );
+		m_jSWMOffRadio = new JRadioButton( "Disabled" );
+
+		ButtonGroup jSWMBtnGrp = new ButtonGroup();
+		jSWMBtnGrp.add( m_jSWMOnRadio );
+		jSWMBtnGrp.add( m_jSWMOffRadio );
+
+		JPanel jSWMPanel = new JPanel( new FlowLayout( FlowLayout.LEFT ) );
+		jSWMPanel.add( jSWMButton );
+		jSWMPanel.add( new JLabel( " Native H2RG windowing to: " ) );
+		jSWMPanel.add( m_jSWMOnRadio );
+		jSWMPanel.add( m_jSWMOffRadio );
+
+		//  'VRM' Command Panel
+		// +--------------------------------------------------+
+		JButton jVRMButton = createButton( "Set", VRM );
+
+		m_jVRM1Radio = new JRadioButton( "1x1" );
+		m_jVRM8Radio = new JRadioButton( "8 at a Time" );
+
+		ButtonGroup jVRMBtnGrp = new ButtonGroup();
+		jVRMBtnGrp.add( m_jVRM1Radio );
+		jVRMBtnGrp.add( m_jVRM8Radio );
+
+		JPanel jVRMPanel = new JPanel( new FlowLayout( FlowLayout.LEFT ) );
+		jVRMPanel.add( jVRMButton );
+		jVRMPanel.add( m_jVRM1Radio );
+		jVRMPanel.add( m_jVRM8Radio );
+		jVRMPanel.add( new JLabel( " video readout mode" ) );
+
+		//  'SSM' Command Panel
+		// +--------------------------------------------------+
+//		JButton jSSMButton = createButton( "Set", SSM );
+
+//		m_jSSMOnRadio  = new JRadioButton( "Enabled" );
+//		m_jSSMOffRadio = new JRadioButton( "Disabled" );
+
+//		ButtonGroup jSSMBtnGrp = new ButtonGroup();
+//		jSSMBtnGrp.add( m_jSSMOnRadio );
+//		jSSMBtnGrp.add( m_jSSMOffRadio );
+
+//		JPanel jSSMPanel = new JPanel( new FlowLayout( FlowLayout.LEFT ) );
+//		jSSMPanel.add( jSSMButton );
+//		jSSMPanel.add( new JLabel( " synchronous readout of two or more controllers to: " ) );
+//		jSSMPanel.add( m_jSSMOnRadio );
+//		jSSMPanel.add( m_jSSMOffRadio );
+
+		JPanel panel = new JPanel();
+		panel.setBorder( BorderFactory.createEmptyBorder( 5, 5, 5, 5 ) );
+
+		panel.setLayout( new BoxLayout( panel, BoxLayout.Y_AXIS ) );
+		panel.add( jTitlePanel );
+		panel.add( jINIPanel );
+		panel.add( jRIRPanel );
+		panel.add( jSERPanel );
+		panel.add( jSRMPanel );
+		panel.add( jSRDPanel );
+		panel.add( jSVOPanel );
+		panel.add( jCDSPanel );
+		panel.add( jSNCPanel );
+		panel.add( jRNCPanel );
+		panel.add( jSVCPanel );
+		panel.add( jSWMPanel );
+		panel.add( jVRMPanel );
+//		panel.add( jSSMPanel );
+
+		return panel;
+	}
+}
+
+
+H2RGCtrl()
+{
+	CCScriptFrame frame =
+			( CCScriptFrame )( new H2RGCtrlFrame() );
+
+	frame.setVisible( true );
+
+	return frame;
+}
+
+
+t = H2RGCtrl();
+t.show();

@@ -1,0 +1,140 @@
+--- RxTx_3.asm	2013-05-14 20:32:17.000000000 -0700
++++ RxTx.asm	2013-05-14 20:32:17.000000000 -0700
+@@ -13,11 +13,11 @@
+ ; Include a header file that defines global parameters
+    INCLUDE  "HAWHead.asm"
+ 
+-APL_NUM  EQU   0 ; Application number from 0 to 3
++APL_NUM  EQU   0                    ; Application number from 0 to 3
+ CC       EQU   IRREV4+TIMREV4
+ 
+ ;  Specify execution and load addresses
+-   IF    @SCP("CODE_TYPE","DOWNLOAD")
++   IF    @SCP("DOWNLOAD","HOST")
+       ORG   P:APL_ADR,P:APL_ADR     ; Download address
+    ELSE                             ; EEPROM address
+       ORG   P:APL_ADR,P:APL_NUM*N_W_APL   
+@@ -33,22 +33,36 @@
+    DO    #256,END_FRAME
+    MOVE  #<SHIFT_RESET_ODD_ROW,R0   ; Shift and reset the line
+    JSR   <CLOCK
++   DO    #256,L_ODD
++   MOVE  #<SHIFT_ODD_ROW_PIXELS,R0
++   JSR   <CLOCK
++   NOP
++L_ODD
+    MOVE  #<SHIFT_RESET_EVEN_ROW,R0  ; Shift and reset the line
+    JSR   <CLOCK
+-   JSR   (R5)                       ; Check for incoming command if in continuous
+-   JCC   <NOT_COM                   ;  reset mode
+-   ENDDO                            ; If there is an incoming command then exit
+-   ENDDO                            ;  continuous mode and return
+-   JMP   <END_RST
+-NOT_COM  
++   DO    #256,L_EVEN
++   MOVE  #<SHIFT_EVEN_ROW_PIXELS,R0
++   JSR   <CLOCK
++   NOP
++L_EVEN
++   JSR   (R5)                       ; Check for incoming command if in
++   JCC   <NOT_COM                   ;  continuous reset mode
++   ENDDO                            ; If there is an incoming command then 
++   ENDDO                            ;  exit continuous reset mode and return
++   JMP   <RST_END
++NOT_COM
+    NOP
+ END_FRAME
+    NOP
+ L_RESET
+    NOP                              ; End of loop label for reading rows
+-END_RST
+    MOVE  #<READ_OFF,R0              ; Turn Read OFF
+    JSR   <CLOCK
++   RTS                              ; Return from subroutine call
++RST_END
++   MOVE  #<READ_OFF,R0              ; Turn Read OFF
++   JSR   <CLOCK
++   BSET  #0,SR                      ; Set carry bit to indicate command was received
+    RTS
+ 
+ ; Dummy subroutine to not call receiver checking routine
+@@ -105,7 +119,6 @@
+    BCLR  #ST_RDC,X:<STATUS          ; Set status to reading out
+    RTS
+ 
+-
+ ;  *********************  Acquire a complete image  **************************
+ ; Reset array, wait, read it out n times, expose, read it out n times
+ START_EXPOSURE
+@@ -145,7 +158,7 @@
+ 
+ ;  ****************  PROGRAM CODE IN SRAM PROGRAM SPACE    *******************
+ ; Put all the following code in SRAM, starting at P:$200.
+-   IF    @SCP("CODE_TYPE","DOWNLOAD")
++   IF    @SCP("DOWNLOAD","HOST")
+       ORG   P:$200,P:$200           ; Download address
+    ELSE                             ; ROM address
+       ORG   P:$200,P:APL_NUM*N_W_APL+APL_LEN 
+@@ -201,7 +214,7 @@
+ ; Continuously reset array, checking for host commands every line
+ CONT_RST
+    MOVE  #<GET_RCV,R5               ; Check for commands every line
+-   JSR   <RESET_ARRAY               ; Reset the array once
++   JSR   <RESET_ARRAY               ; Reset the array twice
+    JCS   <CHK_SSI                   ; If there's a command check its header
+    JMP   <CONT_RST                  ; If there is no command, keep resetting
+ 
+@@ -535,7 +548,7 @@
+    JMP   <START                     ; Return from interrupt service
+ 
+ ; Command table - make sure there are exactly 32 entries in it
+-   IF    @SCP("CODE_TYPE","DOWNLOAD")
++   IF    @SCP("DOWNLOAD","HOST")
+       ORG   X:COM_TBL,X:COM_TBL     ; Download address
+    ELSE                             ; EEPROM address
+       ORG   P:COM_TBL,P:APL_NUM*N_W_APL+APL_LEN+MISC_LEN
+@@ -581,7 +594,7 @@
+ TST_DAT  DC 0                       ; Test image data for synthetic images
+ 
+ ; Start the voltage and timing tables at a fixed address
+-   IF    @SCP("CODE_TYPE","DOWNLOAD")
++   IF    @SCP("DOWNLOAD","HOST")
+       ORG   Y:TBL_ADR,Y:TBL_ADR     ; Download address
+    ELSE                             ; EEPROM address
+       ORG   Y:TBL_ADR,P:APL_NUM*N_W_APL+APL_LEN+MISC_LEN+$4F
+@@ -612,11 +625,11 @@
+ OFF_2       DC $1c0000              ; Input offset board #1, channel A
+ OFF_3       DC $1c4000              ; Input offset board #1, channel B
+ 
+-; DAC settings to generate DC bias voltages for the PICNIC array
+-VOFFSET     DC $0c8bd4              ; pin #1 = preamp offset = +3.7 volts
+-VRESET      DC $0cc195              ; pin #2 = reset = +0.5 volts
++; DAC settings to generate DC bias voltages for the array
++VOFFSET     DC $0c8e65              ; pin #1 = preamp offset = +4.2 volts
++VRESET      DC $0cc2e1              ; pin #2 = reset = +0.9 volts
+ VD          DC $0d0fff              ; pin #3 = analog power = +5.0 volts
+-ICTL        DC $0d4bd4              ; pin #4 = current control = +3.7 volts
++ICTL        DC $0d4a8c              ; pin #4 = current control = +3.3 volts
+ VDD         DC $0d8ccb              ; pin #5 = digital power = +4.0 volts  
+ VUNUSED     DC $0dc000              ; pin #6 = unused to 0V
+ 
+@@ -727,7 +740,8 @@
+    DC CLK2+H_READ+H_PIXEL+H_LSYNC+H_LINE+H_FSYNC+H_RST+DELAY
+    DC VP_DLY                        ; A/D sample
+    DC $010033                       ; Start A/D conversion
+-   DC $160033                       ; Padding
++   DC $000033			    ; Padding
++   DC $140033                       ; Padding
+    DC CLK2+H_READ+L_PIXEL+H_LSYNC+H_LINE+H_FSYNC+H_RST+DELAY
+    DC VP_DLY                        ; A/D sample
+    DC $010033                       ; Start A/D conversion
+@@ -758,7 +772,8 @@
+    DC CLK2+H_READ+H_PIXEL+H_LSYNC+L_LINE+H_FSYNC+H_RST+DELAY
+    DC VP_DLY                        ; A/D sample
+    DC $010033                       ; Start A/D conversion
+-   DC $160033                       ; Padding
++   DC $000033			    ; Padding
++   DC $140033                       ; Padding
+    DC CLK2+H_READ+L_PIXEL+H_LSYNC+L_LINE+H_FSYNC+H_RST+DELAY
+    DC VP_DLY                        ; A/D sample
+    DC $010033                       ; Start A/D conversion
